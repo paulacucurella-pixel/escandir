@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escandir · métrica española</title>
+<style>
+  :root{
+    --paper:#E9ECEC;
+    --card:#F6F7F6;
+    --ink:#1F2D34;
+    --ink-soft:#64727A;
+    --rubric:#BE3A2B;            /* sílaba tónica / marcas de ritmo */
+    --rubric-bg:rgba(190,58,43,.09);
+    --tie:#2E7D78;               /* sinalefa (hilo que une) */
+    --tie-bg:rgba(46,125,120,.12);
+    --gold:#8A6B22;             /* numeración, etiquetas */
+    --line:rgba(31,45,52,.13);
+    --line-strong:rgba(31,45,52,.28);
+
+    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:34px 20px 90px}
+
+  /* ---------- Cabecera ---------- */
+  header.masthead{
+    border-bottom:1.5px solid var(--line-strong);
+    padding-bottom:20px;margin-bottom:26px;
+  }
+  .eyebrow{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--gold);font-weight:600;margin:0 0 8px;
+  }
+  h1.title{
+    font-family:var(--serif);font-weight:400;
+    font-size:clamp(34px,7vw,52px);line-height:1.02;
+    letter-spacing:-.012em;margin:0;color:var(--ink);
+  }
+  h1.title em{font-style:italic;color:var(--rubric)}
+  .lede{
+    margin:12px 0 0;color:var(--ink-soft);font-size:15.5px;max-width:60ch;
+  }
+  .offline-pill{
+    display:inline-flex;align-items:center;gap:7px;
+    margin-top:14px;font-size:12.5px;color:var(--tie);
+    background:var(--tie-bg);border:1px solid rgba(46,125,120,.3);
+    padding:4px 11px;border-radius:999px;font-weight:600;
+  }
+  .offline-pill::before{
+    content:"";width:7px;height:7px;border-radius:50%;
+    background:var(--tie);
+  }
+
+  /* ---------- Entrada ---------- */
+  .composer{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px 18px 16px;
+    box-shadow:0 1px 0 rgba(31,45,52,.04),0 18px 40px -34px rgba(31,45,52,.5);
+  }
+  .composer label.field-label{
+    display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);
+    margin-bottom:8px;letter-spacing:.01em;
+  }
+  textarea#entrada{
+    width:100%;min-height:96px;resize:vertical;
+    font-family:var(--serif);font-size:19px;line-height:1.55;
+    color:var(--ink);background:transparent;
+    border:none;outline:none;padding:2px 0;
+  }
+  textarea#entrada::placeholder{color:rgba(31,45,52,.32);font-style:italic}
+
+  .controls{
+    display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+    margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);
+  }
+  .toggle{
+    --c:var(--ink-soft);
+    display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+    font-size:13px;color:var(--ink-soft);user-select:none;
+    border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px 6px 10px;background:transparent;
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .toggle input{position:absolute;opacity:0;width:0;height:0}
+  .toggle .dot{
+    width:15px;height:15px;border-radius:5px;border:1.5px solid var(--line-strong);
+    display:grid;place-items:center;flex:none;transition:all .15s;
+  }
+  .toggle .dot::after{content:"";width:8px;height:8px;border-radius:3px;background:transparent;transition:background .15s}
+  .toggle:has(input:checked){color:var(--ink);border-color:var(--c);background:var(--rubric-bg)}
+  .toggle:has(input:checked) .dot{border-color:var(--c)}
+  .toggle:has(input:checked) .dot::after{background:var(--c)}
+  .toggle.tie:has(input:checked){background:var(--tie-bg)}
+  .toggle:focus-within{outline:2px solid var(--rubric);outline-offset:2px}
+  .toggle--rubric{--c:var(--rubric)}
+  .toggle--tie{--c:var(--tie)}
+
+  .spacer{flex:1 1 auto;min-width:8px}
+  .count-note{font-size:12.5px;color:var(--ink-soft)}
+
+  /* ---------- Resultados ---------- */
+  .results{margin-top:30px;display:flex;flex-direction:column;gap:18px}
+
+  .verse{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;
+  }
+  .verse-head{
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    padding:15px 18px 12px;border-bottom:1px solid var(--line);
+  }
+  .v-num{
+    font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:600;
+    border:1px solid var(--line);border-radius:6px;padding:1px 7px;flex:none;
+    line-height:1.7;
+  }
+  .v-text{font-family:var(--serif);font-size:20px;color:var(--ink);flex:1 1 240px;min-width:0}
+  .v-badge{
+    display:inline-flex;align-items:baseline;gap:8px;flex:none;
+  }
+  .v-badge .num{
+    font-family:var(--serif);font-size:30px;line-height:1;color:var(--rubric);font-weight:400;
+  }
+  .v-badge .meta{font-size:13px;color:var(--ink-soft);text-align:right}
+  .v-badge .meta b{color:var(--ink);font-weight:600;display:block;font-size:14px}
+
+  .verse-body{padding:16px 18px 18px}
+
+  /* Escansión: el elemento distintivo */
+  .scan{
+    display:flex;flex-wrap:wrap;gap:2px 4px;align-items:flex-end;
+    font-family:var(--mono);
+    padding:4px 0 2px;
+  }
+  .syl{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:5px 7px 4px;border-radius:8px;position:relative;
+    min-width:30px;
+  }
+  .syl .txt{
+    font-family:var(--serif);font-size:18.5px;color:var(--ink-soft);
+    font-feature-settings:"liga" 0;white-space:nowrap;
+  }
+  .syl.tonica .txt{color:var(--rubric);font-weight:700}
+  .syl .mark{
+    font-size:15px;line-height:1;color:var(--ink-soft);height:14px;
+  }
+  .syl.tonica .mark{color:var(--rubric);font-weight:700}
+  .syl .pos{font-size:10px;color:rgba(31,45,52,.42);line-height:1}
+  .syl.sinalefa{background:var(--tie-bg)}
+  .syl.sinalefa .tie{
+    position:absolute;left:6px;right:6px;bottom:-2px;height:6px;
+    border:1.5px solid var(--tie);border-top:none;border-radius:0 0 7px 7px;
+    opacity:.85;
+  }
+  .syl.phantom{opacity:.5}
+  .syl.phantom .txt{font-style:italic;font-size:15px}
+
+  .rhythm-strip{
+    font-family:var(--mono);font-size:15px;letter-spacing:.18em;
+    color:var(--ink);margin:14px 0 0;
+  }
+  .rhythm-strip .t{color:var(--rubric);font-weight:700}
+
+  .facts{
+    display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;
+    padding-top:13px;border-top:1px dashed var(--line);
+    font-size:13.5px;color:var(--ink-soft);
+  }
+  .facts .k{color:var(--gold);font-weight:600;font-size:11.5px;
+    text-transform:uppercase;letter-spacing:.09em;margin-right:6px}
+  .facts b{color:var(--ink);font-weight:600}
+  .facts code{font-family:var(--mono);background:rgba(31,45,52,.05);
+    padding:1px 5px;border-radius:5px;font-size:12.5px;color:var(--ink)}
+  .fact{flex:0 1 auto}
+
+  .gram-line{
+    margin-top:13px;padding-top:12px;border-top:1px dashed var(--line);
+    font-size:13.5px;color:var(--ink-soft);
+  }
+  .gram-line .word{font-family:var(--serif);font-size:16px;color:var(--ink)}
+  .gram-line .sep{color:rgba(31,45,52,.3);margin:0 7px}
+  .gram-line .k{color:var(--gold);font-weight:600;font-size:11.5px;
+    text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:5px}
+
+  /* Esquema final */
+  .scheme{
+    margin-top:6px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:16px 18px;
+  }
+  .scheme h2{
+    font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 4px;
+  }
+  .scheme p{margin:0 0 12px;font-size:13px;color:var(--ink-soft)}
+  .scheme-rows{display:flex;flex-direction:column;gap:5px}
+  .scheme-row{display:flex;align-items:baseline;gap:12px}
+  .scheme-row .tok{
+    font-family:var(--mono);font-size:14px;font-weight:600;
+    width:54px;flex:none;color:var(--rubric);
+  }
+  .scheme-row .tok .arte{color:var(--ink-soft);font-weight:400}
+  .scheme-row .ln{font-family:var(--serif);font-size:15px;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* Leyenda + notas */
+  .aside{margin-top:34px;display:flex;flex-direction:column;gap:14px}
+  .legend{
+    display:flex;flex-wrap:wrap;gap:10px 20px;font-size:13px;color:var(--ink-soft);
+    border-top:1px solid var(--line);padding-top:18px;
+  }
+  .legend .item{display:inline-flex;align-items:center;gap:8px}
+  .legend .glyph{font-family:var(--mono);font-size:15px;width:18px;text-align:center}
+  .legend .glyph.t{color:var(--rubric);font-weight:700}
+  .legend .swatch{width:22px;height:13px;border-radius:4px;background:var(--tie-bg);
+    border-bottom:1.5px solid var(--tie)}
+  details.notes{
+    border:1px solid var(--line);border-radius:12px;background:var(--card);
+    padding:0 16px;
+  }
+  details.notes summary{
+    cursor:pointer;padding:14px 0;font-size:13.5px;font-weight:600;color:var(--ink);
+    list-style:none;display:flex;align-items:center;gap:8px;
+  }
+  details.notes summary::-webkit-details-marker{display:none}
+  details.notes summary::before{content:"+";font-family:var(--mono);color:var(--rubric);font-size:17px;width:14px}
+  details.notes[open] summary::before{content:"–"}
+  details.notes .body{padding:0 0 16px;font-size:13.5px;color:var(--ink-soft);line-height:1.6}
+  details.notes .body p{margin:0 0 10px}
+  details.notes .body b{color:var(--ink)}
+  details.notes .body code{font-family:var(--mono);background:rgba(31,45,52,.05);padding:1px 5px;border-radius:5px;font-size:12.5px;color:var(--ink)}
+
+  .empty{
+    margin-top:30px;text-align:center;color:var(--ink-soft);font-size:15px;
+    font-family:var(--serif);font-style:italic;padding:30px 0;
+  }
+
+  footer.foot{margin-top:40px;border-top:1px solid var(--line);padding-top:16px;
+    font-size:12px;color:rgba(31,45,52,.5)}
+
+  @media (max-width:560px){
+    .v-badge{order:3;width:100%;justify-content:space-between;
+      border-top:1px dashed var(--line);padding-top:10px;margin-top:4px}
+    .v-text{flex-basis:auto}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* ====== AÑADIDOS v2 ====== */
+  /* toggles nuevos */
+  .toggle--gold{--c:var(--gold)}
+  .toggle--gold:has(input:checked){background:rgba(138,107,34,.10)}
+  .toggle--mode{border-color:var(--line-strong);margin-left:2px;font-weight:600}
+  .toggle--mode:has(input:checked){background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .toggle--mode:has(input:checked) .dot{border-color:var(--paper)}
+  .toggle--mode:has(input:checked) .dot::after{background:var(--paper)}
+  .controls.simple-mode .content-toggle{display:none}
+
+  /* desglose del cómputo */
+  .compute{margin-top:13px;padding-top:13px;border-top:1px dashed var(--line)}
+  .compute>.k{color:var(--gold);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.09em;display:block;margin-bottom:9px}
+  ol.compute-list{list-style:none;margin:0;padding:0;font-size:14px;color:var(--ink-soft);border-left:2px solid var(--line)}
+  ol.compute-list li{display:flex;align-items:baseline;gap:10px;padding:4px 0 4px 13px}
+  ol.compute-list li .cn{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);
+    min-width:34px;text-align:right;flex:none}
+  ol.compute-list li.minus .cn{color:var(--rubric)}
+  ol.compute-list li.plus .cn{color:var(--tie)}
+  ol.compute-list li.rule{border-top:1px solid var(--line);margin-top:2px;padding-top:7px}
+  ol.compute-list li.total{margin-top:4px;padding-top:8px;border-top:1.5px solid var(--line-strong);color:var(--ink);font-size:14.5px}
+  ol.compute-list li.total .cn{color:var(--rubric);font-size:15px}
+  ol.compute-list code{font-family:var(--mono);background:var(--tie-bg);color:var(--tie);padding:0 5px;border-radius:5px;font-size:12px}
+  ol.compute-list .cnote{font-size:12.5px}
+
+  /* licencias posibles */
+  .licencias{margin-top:13px;padding-top:13px;border-top:1px dashed var(--line)}
+  .licencias>.k{color:var(--gold);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.09em;display:block;margin-bottom:9px}
+  ul.lic-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  ul.lic-list li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-soft);line-height:1.5}
+  .lic-tag{flex:none;font-size:11px;font-weight:700;letter-spacing:.02em;padding:2px 8px;border-radius:999px;
+    text-transform:lowercase;border:1px solid;line-height:1.5;margin-top:1px}
+  .lic-tag.sineresis{color:var(--tie);border-color:rgba(46,125,120,.45);background:var(--tie-bg)}
+  .lic-tag.dieresis{color:var(--rubric);border-color:rgba(190,58,43,.4);background:var(--rubric-bg)}
+  .lic-tag.dialefa{color:var(--gold);border-color:rgba(138,107,34,.4);background:rgba(138,107,34,.10)}
+  .lic-body .word{font-family:var(--serif);font-size:15px;color:var(--ink)}
+  .lic-body code{font-family:var(--mono);font-size:12px;background:rgba(31,45,52,.05);padding:0 5px;border-radius:5px;color:var(--ink)}
+  .lic-body .muted{font-style:italic;color:rgba(31,45,52,.5)}
+  .lic-caveat,.lic-none{font-size:12.5px;color:rgba(31,45,52,.5);margin:10px 0 0;font-style:italic}
+  .empty-lic .lic-none{margin-top:0}
+
+  /* forma estrófica */
+  .strophe{margin:6px 0 14px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;border-left:4px solid var(--gold)}
+  .strophe.conf-alta{border-left-color:var(--tie)}
+  .strophe.conf-baja{border-left-color:var(--line-strong)}
+  .strophe>.k{color:var(--gold);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.09em;display:block;margin-bottom:6px}
+  .strophe .forma{font-family:var(--serif);font-weight:400;font-size:25px;margin:0 0 6px;color:var(--ink);
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .strophe .conf{font-family:var(--sans);font-size:11.5px;font-weight:600;color:var(--ink-soft);
+    border:1px solid var(--line);border-radius:999px;padding:2px 9px;letter-spacing:.02em}
+  .strophe.conf-alta .conf{color:var(--tie);border-color:rgba(46,125,120,.4);background:var(--tie-bg)}
+  .strophe .desc{margin:0 0 10px;font-size:14.5px;color:var(--ink);line-height:1.5}
+  .strophe .evid{margin:0 0 4px;font-size:13px;color:var(--ink-soft)}
+  .strophe .evid .el{color:var(--gold);font-weight:600;font-size:11px;text-transform:uppercase;
+    letter-spacing:.08em;margin-right:8px}
+  .strophe .evid code{font-family:var(--mono);font-size:12.5px;background:rgba(31,45,52,.05);
+    padding:1px 6px;border-radius:5px;color:var(--ink);letter-spacing:.05em}
+  .strophe-caveat{margin:10px 0 0;font-size:12px;color:rgba(31,45,52,.5);font-style:italic}
+
+  /* modo diseño simple */
+  .simple-doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 22px 18px}
+  .simple-hint{font-size:12.5px;color:var(--ink-soft);border-bottom:1px dashed var(--line);padding:12px 0;margin:0 0 6px}
+  .simple-hint .t{color:var(--rubric);font-weight:700;font-style:normal}
+  .s-row{display:flex;align-items:baseline;gap:14px;padding:7px 0;border-bottom:1px solid rgba(31,45,52,.06)}
+  .s-row:last-child{border-bottom:none}
+  .s-row.s-blank{height:10px;border-bottom:none;padding:0}
+  .s-num{font-family:var(--mono);font-size:11px;color:rgba(31,45,52,.4);flex:none;width:22px;line-height:1.9}
+  .s-syl{font-family:var(--serif);font-size:21px;color:var(--ink-soft);flex:1 1 auto;line-height:1.5;letter-spacing:.01em}
+  .s-syl .t{color:var(--rubric);font-weight:700}
+  .s-syl .syn{border-bottom:2px solid var(--tie);padding-bottom:1px}
+  .s-meta{flex:none;text-align:right;font-size:13px;color:var(--ink-soft);min-width:104px}
+  .s-meta b{font-family:var(--serif);font-size:18px;color:var(--rubric);font-weight:400;margin-right:4px}
+  @media (max-width:560px){.s-meta{min-width:0}.s-syl{font-size:19px}}
+
+  /* fichas de definición (verso y estrofa) */
+  .ficha{margin:10px 0 0;display:flex;flex-direction:column;gap:7px}
+  .ficha>div{display:flex;gap:10px;align-items:baseline}
+  .ficha dt{flex:none;width:108px;color:var(--gold);font-weight:600;font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.08em;line-height:1.5;padding-top:2px}
+  .ficha dd{margin:0;font-size:13.5px;color:var(--ink);line-height:1.55}
+  .ficha.mini{margin-top:8px}
+  .ficha.mini dt{width:96px}
+  .ficha.mini dd{color:var(--ink-soft)}
+
+  /* panel de tipos de verso */
+  .tipos{margin:6px 0 14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .tipos>.k{color:var(--gold);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:12px}
+  .tipos-grid{display:flex;flex-direction:column;gap:16px}
+  .vtipo{border-left:3px solid var(--rubric);padding-left:14px}
+  .vtipo header{display:flex;align-items:baseline;gap:10px;margin-bottom:5px;flex-wrap:wrap}
+  .vtipo .vt-num{font-family:var(--serif);font-size:26px;color:var(--rubric);line-height:1}
+  .vtipo h3{font-family:var(--serif);font-weight:400;font-size:20px;margin:0;color:var(--ink)}
+  .vtipo .vt-arte{font-size:11.5px;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:1px 9px}
+  .vtipo .vt-def{margin:0;font-size:14px;color:var(--ink);line-height:1.55}
+  @media (max-width:560px){.ficha>div{flex-direction:column;gap:1px}.ficha dt,.ficha.mini dt{width:auto}}
+
+  /* descarga offline */
+  .actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:14px}
+  .download-btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+    font-family:var(--sans);font-size:13px;font-weight:600;color:var(--paper);
+    background:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:7px 15px;
+    transition:background .15s,transform .05s}
+  .download-btn:hover{background:#16242b}
+  .download-btn:active{transform:translateY(1px)}
+  .download-btn:focus-visible{outline:2px solid var(--rubric);outline-offset:2px}
+  .download-btn .dl-ico{font-size:15px;line-height:1;transform:translateY(1px)}
+  .download-btn.done{background:var(--tie);border-color:var(--tie)}
+  .dl-hint{font-size:12px;color:var(--ink-soft);flex:1 1 220px;min-width:180px}
+  @media (max-width:560px){.dl-hint{flex-basis:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Análisis de métrica española</p>
+    <h1 class="title"><em>Escandir</em> verso a verso</h1>
+    <p class="lede">Pega un verso, una estrofa o un poema entero. Cuenta las sílabas
+      poéticas con sinalefa y ley del acento final, define el tipo de verso y la forma
+      estrófica —con su origen y autores—, explica el cómputo paso a paso y señala las
+      licencias posibles.</p>
+    <div class="actions">
+      <span class="offline-pill">Funciona sin conexión</span>
+      <button type="button" id="download-btn" class="download-btn" title="Guarda esta página como un único archivo HTML">
+        <span class="dl-ico" aria-hidden="true">↓</span> Descargar para usar sin conexión
+      </button>
+      <span class="dl-hint">Guarda el archivo y ábrelo con doble clic — no necesita internet ni instalación.</span>
+    </div>
+  </header>
+
+  <section class="composer">
+    <label class="field-label" for="entrada">Texto</label>
+    <textarea id="entrada" spellcheck="false"
+      placeholder="al cabo de otro rio">al cabo de otro rio</textarea>
+    <div class="controls" id="controls">
+      <label class="toggle toggle--rubric content-toggle"><input type="checkbox" id="opt-ritmo" checked><span class="dot"></span>Ritmo –∪</label>
+      <label class="toggle content-toggle"><input type="checkbox" id="opt-gram" checked><span class="dot"></span>Silabeo gramatical</label>
+      <label class="toggle toggle--tie tie content-toggle"><input type="checkbox" id="opt-sin" checked><span class="dot"></span>Sinalefa</label>
+      <label class="toggle content-toggle"><input type="checkbox" id="opt-rima" checked><span class="dot"></span>Rima</label>
+      <label class="toggle content-toggle"><input type="checkbox" id="opt-explica"><span class="dot"></span>Explicar cómputo</label>
+      <label class="toggle toggle--gold content-toggle"><input type="checkbox" id="opt-lic"><span class="dot"></span>Licencias posibles</label>
+      <label class="toggle toggle--mode" id="toggle-simple" title="Vista compacta, como un texto continuo"><input type="checkbox" id="opt-simple"><span class="dot"></span>Diseño simple</label>
+      <span class="spacer"></span>
+      <span class="count-note" id="count-note"></span>
+    </div>
+  </section>
+
+  <div class="results" id="results"></div>
+  <div id="scheme-host"></div>
+
+  <div class="aside">
+    <div class="legend">
+      <span class="item"><span class="glyph t">–</span> sílaba tónica (acento rítmico)</span>
+      <span class="item"><span class="glyph">∪</span> sílaba átona</span>
+      <span class="item"><span class="swatch"></span> sinalefa (vocales unidas entre palabras)</span>
+    </div>
+
+    <details class="notes">
+      <summary>Cómo cuenta las sílabas (y sus límites)</summary>
+      <div class="body">
+        <p><b>Silabeo gramatical.</b> Separa cada palabra siguiendo las reglas del español:
+          diptongos (<code>cie-rra</code>, <code>ciu-dad</code>), hiatos por vocal abierta doble
+          o vocal cerrada tónica (<code>po-e-ta</code>, <code>rí-o</code>) y triptongos.
+          La <b>h</b> se trata como consonante (<code>pro-hi-bir</code>) y la <b>u</b> es muda en
+          <code>qu</code>/<code>gu</code> ante e, i (<code>gue-rra</code>, <code>a-quí</code>).</p>
+        <p><b>Sinalefa.</b> En el verso, una vocal final y la vocal inicial de la palabra
+          siguiente se pronuncian en una sola sílaba métrica (<code>de&nbsp;otro → deo</code>).
+          La <b>h</b> inicial es muda y no la impide (<code>no&nbsp;hay → nohay</code>).
+          Puedes desactivarla para ver el recuento sin enlazar.</p>
+        <p><b>Ley del acento final.</b> El cómputo se ajusta según la última palabra del verso:
+          aguda o monosílaba <b>+1</b>, llana <b>±0</b>, esdrújula <b>−1</b>.</p>
+        <p><b>Acentos rítmicos.</b> Marca como tónicas las sílabas acentuadas de las palabras
+          con carga (no de artículos, preposiciones breves, conjunciones ni pronombres átonos).
+          El patrón <code>–∪</code> resultante sugiere el ritmo (yámbico, trocaico…).</p>
+        <p><b>Límites del análisis automático.</b> El recuento por reglas no decide las licencias
+          poéticas (<i>sinéresis</i>, <i>diéresis</i>, <i>dialefa</i>): por eso la app solo
+          <b>señala</b> dónde serían posibles —con «Licencias posibles»— sin aplicarlas.
+          La etiqueta de ritmo es orientativa y la <b>h</b> intervocálica
+          (<code>ahora</code>, <code>prohibir</code>) puede escapar a la detección.</p>
+      </div>
+    </details>
+
+    <details class="notes">
+      <summary>Licencias poéticas: qué señala y qué no</summary>
+      <div class="body">
+        <p>Con la opción <b>«Licencias posibles»</b> la app marca, sin aplicarlas, los lugares
+          donde el poeta <i>podría</i> haber usado una licencia para ajustar la medida:</p>
+        <p><b>Sinéresis.</b> Fundir en una sola sílaba un hiato de vocales abiertas dentro de una
+          palabra (<code>po-e-ta → poe-ta</code>, <code>le-al → leal</code>). Se señala cuando hay
+          dos vocales fuertes en contacto.</p>
+        <p><b>Diéresis.</b> Lo contrario: deshacer un diptongo para que cuente como dos sílabas
+          (<code>sua-ve → su-a-ve</code>, <code>rui-do → ru-i-do</code>). En la poesía clásica suele
+          marcarse con crema (<code>rüido</code>); la app respeta esa marca y, además, indica qué
+          diptongos serían separables.</p>
+        <p><b>Dialefa.</b> Romper una sinalefa y pronunciar por separado las vocales que se tocan
+          entre dos palabras. La app lista las sinalefas que ha aplicado, porque cada una es una
+          dialefa en potencia.</p>
+        <p>Son <b>posibilidades</b>, no decisiones: el recuento de cada verso nunca las aplica solo.
+          Quien lee elige si el verso las pide para encajar en su medida.</p>
+      </div>
+    </details>
+
+    <details class="notes">
+      <summary>Cómo identifica la estrofa</summary>
+      <div class="body">
+        <p>Con dos o más versos, la app propone una <b>forma compatible</b> cruzando tres datos:
+          el <b>número de versos</b>, su <b>medida</b> predominante y el <b>esquema de rima</b>
+          (consonante y asonante). Así reconoce moldes como el <i>soneto</i> (14 endecasílabos,
+          dos cuartetos y dos tercetos), la <i>lira</i> (7-11-7-7-11, aBabB), la <i>redondilla</i>,
+          el <i>serventesio</i>, la <i>octava real</i>, la <i>décima</i> espinela, la <i>seguidilla</i>,
+          la <i>silva</i> o el <i>romance</i> (asonancia en los versos pares).</p>
+        <p>De cada <b>tipo de verso</b> se da su nombre por número de sílabas (arte menor
+          hasta ocho, arte mayor a partir de nueve), su definición y, en los más
+          característicos, su origen y autores. De cada <b>forma</b> reconocida se ofrece una
+          ficha con su definición, su época u origen y sus principales representantes.</p>
+        <p>Cada propuesta indica su <b>nivel de confianza</b> y los indicios en que se apoya.
+          Como parte del cómputo automático, una licencia no detectada puede cambiar una medida
+          y, con ella, la forma: por eso se ofrece como identificación orientativa, no como
+          veredicto.</p>
+      </div>
+    </details>
+  </div>
+
+  <footer class="foot">Análisis local en tu navegador · ningún dato sale de tu dispositivo.</footer>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   MOTOR DE MÉTRICA ESPAÑOLA v2
+   - silabeo + sinalefa + ley del acento final  (validado)
+   - NUEVO: licencias candidatas (sinéresis/diéresis/dialefa)
+   - NUEVO: desglose del cómputo paso a paso
+   - NUEVO: detección de estrofas clásicas
+   ============================================================ */
+const FUERTES=new Set([..."aáàâeéèêoóòôAÁÀÂEÉÈÊOÓÒÔ"]);
+const DEBILES=new Set([..."iíìîïuúùûüIÍÌÎÏUÚÙÛÜ"]);
+const DEBIL_ACENT=new Set([..."íìîúùûÍÌÎÚÙÛ"]);
+const DIERESIS=new Set([..."ïüÏÜ"]); // marca de diéresis (sólo fuerza hiato fuera de gue/gui)
+const CON_TILDE=new Set([..."áéíóúàèìòùÁÉÍÓÚÀÈÌÒÙ"]);
+const QUITAR_TILDE={"á":"a","é":"e","í":"i","ó":"o","ú":"u","ü":"u","ï":"i","à":"a","è":"e","ì":"i","ò":"o","ù":"u","â":"a","ê":"e","î":"i","ô":"o","û":"u"};
+const esVocal=c=>FUERTES.has(c)||DEBILES.has(c);
+const esFuerte=c=>FUERTES.has(c);
+const esDebilAcent=c=>DEBIL_ACENT.has(c);
+const tieneTilde=c=>CON_TILDE.has(c);
+const sinTilde=c=>QUITAR_TILDE[c]||c;
+
+const ATONAS=new Set([
+  "el","la","los","las","lo","un","al","del",
+  "a","de","con","en","por","sin","so","tras","cabe",
+  "y","e","o","u","ni","que","mas","si","pues","como",
+  "me","te","se","nos","os","le","les",
+  "mi","tu","su","mis","tus","sus","tan"
+]);
+
+function silabearPalabra(palabraOriginal){
+  const limpia=palabraOriginal.toLowerCase();
+  const ch=[...limpia];const n=ch.length;
+  if(n===0)return null;
+  const esV=new Array(n).fill(false);const uMuda=new Set();
+  for(let i=0;i<n;i++){
+    const c=ch[i];
+    if(c==="y"){
+      const prev=ch[i-1];
+      if(n===1)esV[i]=true;
+      else if(i===n-1&&prev&&esVocal(prev))esV[i]=true;
+      else esV[i]=false;
+    }else if(c==="u"){
+      const prev=ch[i-1],next=ch[i+1];
+      const muda=(prev==="q")||(prev==="g"&&(next==="e"||next==="é"||next==="i"||next==="í"));
+      if(muda){esV[i]=false;uMuda.add(i);}else esV[i]=true;
+    }else esV[i]=esVocal(c);
+  }
+  // diéresis marcada (ï/ü): fuerza hiato salvo en güe/güi (g + ü + e/i)
+  const forzar=new Set();
+  for(let i=0;i<n;i++){
+    if(DIERESIS.has(ch[i])){
+      const prev=ch[i-1],next=ch[i+1];
+      const gueGui=(ch[i]==="ü"||ch[i]==="Ü")&&prev==="g"&&(next==="e"||next==="é"||next==="i"||next==="í");
+      if(!gueGui)forzar.add(i);
+    }
+  }
+  const vidx=[];for(let i=0;i<n;i++)if(esV[i])vidx.push(i);
+  if(vidx.length===0)return{silabas:[limpia],idxSilabas:[[0,n]],tonica:0,tipo:"monosilaba",original:palabraOriginal,nucleos:[[]],sineresisPairs:[]};
+  const grupos=[];let actual=[vidx[0]];
+  for(let k=1;k<vidx.length;k++){
+    if(vidx[k]===vidx[k-1]+1)actual.push(vidx[k]);
+    else{grupos.push(actual);actual=[vidx[k]];}
+  }
+  grupos.push(actual);
+  const nucleos=[];          // cada núcleo = índices de vocales de una sílaba
+  const sineresisPairs=[];   // índice L de núcleo: el par (L, L+1) es un hiato de vocales fuertes en contacto
+  for(const g of grupos){
+    let nuc=[g[0]];
+    for(let k=1;k<g.length;k++){
+      const a=ch[g[k-1]],b=ch[g[k]];
+      const forzado=forzar.has(g[k-1])||forzar.has(g[k]);
+      const hiato=forzado||esDebilAcent(a)||esDebilAcent(b)||(esFuerte(a)&&esFuerte(b));
+      if(hiato){
+        nucleos.push(nuc);
+        if(!forzado&&esFuerte(a)&&esFuerte(b))sineresisPairs.push(nucleos.length-1); // par fuerte-fuerte: candidato a sinéresis
+        nuc=[g[k]];
+      }else nuc.push(g[k]);
+    }
+    nucleos.push(nuc);
+  }
+  function clusterInsep(c1,c2,i2){
+    if(c1==="c"&&c2==="h")return true;
+    if(c1==="l"&&c2==="l")return true;
+    if(c1==="r"&&c2==="r")return true;
+    if(c2==="l"&&"bcfgkp".includes(c1))return true;
+    if(c2==="r"&&"bcdfgkpt".includes(c1))return true;
+    if(uMuda.has(i2)&&(c1==="q"||c1==="g"))return true;
+    return false;
+  }
+  const fronteras=[0];
+  for(let s=1;s<nucleos.length;s++){
+    const prevLast=nucleos[s-1][nucleos[s-1].length-1];
+    const curFirst=nucleos[s][0];
+    const cons=[];for(let i=prevLast+1;i<curFirst;i++)cons.push(i);
+    let frontera;
+    if(cons.length===0)frontera=curFirst;
+    else if(cons.length===1)frontera=cons[0];
+    else{
+      const i1=cons[cons.length-2],i2=cons[cons.length-1];
+      frontera=clusterInsep(ch[i1],ch[i2],i2)?i1:i2;
+    }
+    fronteras.push(frontera);
+  }
+  const idxSilabas=[];
+  for(let s=0;s<fronteras.length;s++){
+    const ini=fronteras[s];const fin=(s+1<fronteras.length)?fronteras[s+1]:n;
+    idxSilabas.push([ini,fin]);
+  }
+  const silabas=idxSilabas.map(([i,j])=>limpia.slice(i,j));
+  let tonica=-1;
+  for(let s=0;s<idxSilabas.length;s++){
+    const[i,j]=idxSilabas[s];
+    for(let k=i;k<j;k++){if(tieneTilde(ch[k])){tonica=s;break;}}
+    if(tonica>=0)break;
+  }
+  if(tonica<0){
+    const ult=ch[n-1];
+    const ultVNS=esVocal(ult)||ult==="n"||ult==="s"||ult==="y";
+    if(silabas.length===1)tonica=0;
+    else if(ultVNS)tonica=silabas.length-2;
+    else tonica=silabas.length-1;
+  }
+  const desdeFinal=silabas.length-1-tonica;
+  let tipo;
+  if(silabas.length===1)tipo="monosilaba";
+  else if(desdeFinal===0)tipo="aguda";
+  else if(desdeFinal===1)tipo="llana";
+  else if(desdeFinal===2)tipo="esdrujula";
+  else tipo="sobreesdrujula";
+  return{silabas,idxSilabas,tonica,tipo,original:palabraOriginal,nucleos,sineresisPairs};
+}
+
+// Licencias INTERNAS de una palabra (sobre su silabeo gramatical)
+function licenciasPalabra(info){
+  const sineresis=[]; // hiato de vocales fuertes en contacto -> podría fundirse en 1 sílaba
+  const dieresis=[];  // diptongo/triptongo real -> podría separarse en 2
+  if(!info.nucleos)return{sineresis,dieresis};
+  // sinéresis: cada par registrado (L, L+1) son dos sílabas contiguas que podrían unirse
+  for(const L of info.sineresisPairs){
+    if(L+1<info.silabas.length){
+      const vL=info.silabas[L], vR=info.silabas[L+1];
+      // vocales en contacto: última vocal de la sílaba izq + primera de la der
+      const izq=[...vL].filter(esVocal); const der=[...vR].filter(esVocal);
+      const vocales=(izq.length?izq[izq.length-1]:"")+(der.length?der[0]:"");
+      sineresis.push({s:[L,L+1],vocales:vocales.split("").map(sinTilde).join(""),silabas:[vL,vR]});
+    }
+  }
+  // diéresis: sílabas cuyo núcleo tiene 2+ vocales reales
+  info.nucleos.forEach((nuc,i)=>{
+    if(nuc.length>=2){
+      const sil=info.silabas[i]||"";
+      const vocs=[...sil].filter(esVocal).join("");
+      dieresis.push({s:i,vocales:vocs,silaba:sil});
+    }
+  });
+  return{sineresis,dieresis};
+}
+
+function esAtona(info){
+  if(info.silabas.length>1)return false;
+  if([...info.original.toLowerCase()].some(tieneTilde))return false;
+  const base=info.silabas[0].split("").map(sinTilde).join("");
+  return ATONAS.has(base)||ATONAS.has(info.original.toLowerCase());
+}
+function tokenizar(linea){
+  return linea.split(/\s+/)
+    .map(w=>w.replace(/^[^0-9a-záéíóúüñ]+/i,"").replace(/[^0-9a-záéíóúüñ]+$/i,""))
+    .filter(w=>w.length>0);
+}
+function vocalFinal(p){const c=[...p.toLowerCase()];const last=c[c.length-1];if(last==="y")return true;return esVocal(last);}
+function empiezaVocal(p){const c=[...p.toLowerCase()];let f=c[0];if(f==="h")f=c[1];return f!==undefined&&esVocal(f);}
+
+const NOMBRES={1:"monosílabo",2:"bisílabo",3:"trisílabo",4:"tetrasílabo",5:"pentasílabo",6:"hexasílabo",7:"heptasílabo",8:"octosílabo",9:"eneasílabo",10:"decasílabo",11:"endecasílabo",12:"dodecasílabo",13:"tridecasílabo",14:"alejandrino",15:"pentadecasílabo",16:"hexadecasílabo"};
+function nombreVerso(n){return{nombre:NOMBRES[n]||(n+" sílabas"),arte:n<=8?"arte menor":"arte mayor"};}
+
+// índice (dentro de la sílaba) de la vocal que porta el acento prosódico
+function nucleoStressIndex(silaba){
+  const chs=[...silaba];
+  for(let i=0;i<chs.length;i++)if(tieneTilde(chs[i]))return i;
+  const vi=[];for(let i=0;i<chs.length;i++)if(esVocal(chs[i]))vi.push(i);
+  if(vi.length===0)return -1;
+  if(vi.length===1)return vi[0];
+  const fuertes=vi.filter(i=>esFuerte(chs[i]));
+  if(fuertes.length>=1)return fuertes[fuertes.length-1]; // diptongo: núcleo = vocal fuerte
+  return vi[vi.length-1];                                 // dos débiles (iu/ui): la segunda
+}
+function calcularRima(info){
+  const tail=info.silabas.slice(info.tonica).join("");
+  const tonSil=info.silabas[info.tonica]||"";
+  let start=nucleoStressIndex(tonSil);
+  const chs=[...tail];
+  if(start<0||start>=chs.length){start=chs.findIndex(esVocal);if(start<0)return{consonante:"",asonante:""};}
+  const deDier=c=>({"ï":"i","Ï":"i","ü":"u","Ü":"u"}[c]||c);
+  const consonante=chs.slice(start).map(sinTilde).map(deDier).join("");
+  const vocPos=[];chs.forEach((c,i)=>{if(esVocal(c))vocPos.push(i);});
+  const stressV=sinTilde(chs[start]);
+  const lastV=sinTilde(chs[vocPos[vocPos.length-1]]);
+  const asonante=(vocPos.length<=1||start===vocPos[vocPos.length-1])?stressV:stressV+lastV;
+  return{consonante,asonante};
+}
+
+function analizarVerso(linea,usarSinalefa){
+  const palabras=tokenizar(linea);
+  if(palabras.length===0)return null;
+  const infos=palabras.map(silabearPalabra).filter(Boolean);
+  const gramatical=infos.map(inf=>({palabra:inf.original,silabas:inf.silabas,lic:licenciasPalabra(inf)}));
+  const gramTotal=infos.reduce((s,inf)=>s+inf.silabas.length,0);
+  const metricas=[];
+  const sinalefas=[]; // textos de las sílabas fusionadas por sinalefa
+  for(let p=0;p<infos.length;p++){
+    const inf=infos[p];const atona=esAtona(inf);
+    for(let s=0;s<inf.silabas.length;s++){
+      const esT=(!atona)&&(s===inf.tonica);
+      const sil={texto:inf.silabas[s],tonica:esT,sinalefa:false};
+      if(usarSinalefa&&s===0&&p>0&&metricas.length>0){
+        if(vocalFinal(palabras[p-1])&&empiezaVocal(palabras[p])){
+          const prev=metricas[metricas.length-1];
+          prev.texto=prev.texto+sil.texto;
+          prev.tonica=prev.tonica||sil.tonica;
+          prev.sinalefa=true;continue;
+        }
+      }
+      metricas.push(sil);
+    }
+  }
+  metricas.forEach(m=>{if(m.sinalefa)sinalefas.push(m.texto);});
+  const nReales=metricas.length;
+  const ultima=infos[infos.length-1];
+  let ajuste=0,motivo="palabra llana final (±0)",tipoAjuste="llana";
+  if(ultima.tipo==="aguda"||ultima.tipo==="monosilaba"){ajuste=1;tipoAjuste=ultima.tipo==="monosilaba"?"monosílaba":"aguda";motivo=tipoAjuste+" final (+1)";}
+  else if(ultima.tipo==="esdrujula"){ajuste=-1;tipoAjuste="esdrújula";motivo="esdrújula final (−1)";}
+  else if(ultima.tipo==="sobreesdrujula"){ajuste=-2;tipoAjuste="sobreesdrújula";motivo="sobreesdrújula final (−2)";}
+  const conteoFinal=nReales+ajuste;
+  const{nombre,arte}=nombreVerso(conteoFinal);
+  const acentos=[];metricas.forEach((m,i)=>{if(m.tonica)acentos.push(i+1);});
+  let ritmoTipo;
+  if(acentos.length===0)ritmoTipo="sin acentos marcados";
+  else{
+    const pares=acentos.every(p=>p%2===0),impares=acentos.every(p=>p%2===1);
+    if(pares)ritmoTipo="ritmo yámbico (∪–)";
+    else if(impares)ritmoTipo="ritmo trocaico (–∪)";
+    else ritmoTipo="ritmo mixto";
+  }
+  const patron=metricas.map(m=>m.tonica?"–":"∪").join("");
+  // agregación de licencias del verso
+  const sineresis=[],dieresis=[];
+  gramatical.forEach(g=>{
+    g.lic.sineresis.forEach(x=>sineresis.push({palabra:g.palabra,...x}));
+    g.lic.dieresis.forEach(x=>dieresis.push({palabra:g.palabra,...x}));
+  });
+  const licencias={sineresis,dieresis,dialefa:sinalefas.slice()};
+  return{texto:linea.trim(),gramatical,metricas,nReales,gramTotal,sinalefas,ajuste,motivo,tipoAjuste,conteoFinal,nombre,arte,acentos,ritmoTipo,patron,rima:calcularRima(ultima),tipoFinal:ultima.tipo,licencias};
+}
+
+/* ============================================================
+   DETECCIÓN DE ESTROFAS
+   ============================================================ */
+function esquemaLetras(versos,tipo){
+  const mapa={};let next=0;const L="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return versos.map(v=>{
+    const key=(tipo==="consonante"?v.rima.consonante:v.rima.asonante)||"·";
+    if(!(key in mapa))mapa[key]=next++;
+    return L[mapa[key]%26];
+  }).join("");
+}
+function moda(arr){
+  const c={};let best=arr[0],bestN=0;
+  arr.forEach(x=>{c[x]=(c[x]||0)+1;if(c[x]>bestN){bestN=c[x];best=x;}});
+  return{valor:best,n:bestN};
+}
+function aprox(x,objetivo,tol){return Math.abs(x-objetivo)<=tol;}
+
+/* fichas literarias de las formas estróficas: definición · origen y época · representantes */
+const FORMAS={
+ "Pareado":{def:"Estrofa de dos versos que riman entre sí (AA), de cualquier medida.",origen:"Forma elemental presente desde la Edad Media; muy cultivada en la fábula neoclásica del siglo XVIII y en refranes y sentencias.",repr:"Tomás de Iriarte y Félix M.ª Samaniego (fábulas); abundante en la poesía gnómica y popular."},
+ "Terceto":{def:"Estrofa de tres versos endecasílabos que, encadenada, sigue el esquema ABA BCB CDC… (terza rima).",origen:"De origen italiano: la terza rima de Dante (Divina comedia). Adoptada en español en el siglo XVI.",repr:"Garcilaso de la Vega (elegías y epístolas), Fernando de Herrera, Lope de Vega."},
+ "Soleá":{def:"Estrofa popular de tres versos octosílabos con rima asonante en el 1.º y el 3.º; el 2.º queda suelto.",origen:"Copla andaluza ligada al cante flamenco (soleares).",repr:"Poesía tradicional andaluza; Manuel Machado y Federico García Lorca la llevaron a la lírica culta."},
+ "Cuarteto":{def:"Estrofa de cuatro versos endecasílabos con rima consonante abrazada ABBA.",origen:"Forma italianizante introducida en el Renacimiento (siglo XVI).",repr:"Garcilaso, Góngora, Quevedo y la poesía culta posterior."},
+ "Serventesio":{def:"Estrofa de cuatro versos endecasílabos con rima consonante alterna ABAB.",origen:"Variante del cuarteto, de raíz italiana y provenzal; muy cultivada en el Renacimiento y el Modernismo.",repr:"Rubén Darío y los modernistas; antes, los poetas del Siglo de Oro."},
+ "Redondilla":{def:"Estrofa de cuatro versos octosílabos con rima consonante abrazada abba.",origen:"Forma tradicional castellana, frecuentísima en el teatro y la lírica del Siglo de Oro.",repr:"Sor Juana Inés de la Cruz («Hombres necios…»), Lope de Vega, Calderón de la Barca."},
+ "Cuarteta":{def:"Estrofa de cuatro versos octosílabos con rima consonante alterna abab.",origen:"Forma popular y tradicional española.",repr:"Poesía popular; cultivada por Bécquer y Antonio Machado."},
+ "Copla":{def:"Estrofa de cuatro versos octosílabos con rima asonante en los pares (-a-a); el 2.º y el 4.º riman y los otros quedan sueltos.",origen:"Unidad básica de la lírica popular española, ligada a la canción y al cante.",repr:"Poesía tradicional y flamenca; Manuel Machado y Antonio Machado la elevaron a la lírica culta."},
+ "Seguidilla":{def:"Estrofa de versos de siete y cinco sílabas (7-5-7-5) con rima asonante en los pares.",origen:"Lírica popular española (siglos XV-XVII), ligada al baile y al cante.",repr:"Poesía tradicional; cultivada en el Siglo de Oro y por los hermanos Machado."},
+ "Lira":{def:"Estrofa de cinco versos —dos endecasílabos y tres heptasílabos (7-11-7-7-11)— con rima consonante aBabB.",origen:"Creada en el Renacimiento español (siglo XVI) a imitación italiana; la estrenó Garcilaso en la «Oda a la flor de Gnido».",repr:"Garcilaso de la Vega, fray Luis de León («Vida retirada») y san Juan de la Cruz."},
+ "Quintilla":{def:"Estrofa de cinco versos octosílabos con dos rimas consonantes, sin tres versos seguidos con la misma rima ni pareado final.",origen:"Forma tradicional castellana de arte menor, frecuente en el Siglo de Oro.",repr:"Teatro áureo; José de Espronceda y la poesía romántica."},
+ "Quinteto":{def:"Estrofa de cinco versos de arte mayor (endecasílabos), variante culta de la quintilla.",origen:"Versión endecasilábica de la quintilla, propia de la poesía culta.",repr:"Poetas del Romanticismo y el Modernismo."},
+ "Octava real":{def:"Estrofa de ocho versos endecasílabos con rima ABABABCC.",origen:"De origen italiano (ottava rima de Boccaccio, Ariosto y Tasso); introducida en español en el siglo XVI para la épica culta.",repr:"Alonso de Ercilla («La Araucana»), Lope de Vega, Góngora."},
+ "Octavilla":{def:"Estrofa de ocho versos de arte menor.",origen:"Variante menor de la octava, frecuente en la poesía de los siglos XVIII y XIX.",repr:"Poesía neoclásica y romántica (la llamada octavilla aguda o italiana)."},
+ "Décima":{def:"Estrofa de diez versos octosílabos con rima consonante abbaaccddc, llamada espinela.",origen:"Fijada por Vicente Espinel a finales del siglo XVI (de ahí «espinela»).",repr:"Vicente Espinel, Calderón de la Barca; muy viva en la poesía popular improvisada de Hispanoamérica."},
+ "Soneto":{def:"Composición de catorce versos endecasílabos en dos cuartetos y dos tercetos, con rima consonante.",origen:"De origen italiano (Dante y, sobre todo, Petrarca); aclimatado al español en el siglo XVI por Juan Boscán y Garcilaso de la Vega.",repr:"Garcilaso, Lope, Góngora, Quevedo y Sor Juana; en época moderna, Rubén Darío, Antonio Machado, Lorca o Borges."},
+ "Romance":{def:"Serie indefinida de versos octosílabos con rima asonante en los pares; los impares quedan sueltos.",origen:"Forma tradicional castellana de raíz medieval (siglos XIV-XV), nacida de la fragmentación de los cantares de gesta.",repr:"Romancero viejo (anónimo); Romancero nuevo de Lope, Góngora y Quevedo; en el siglo XX, el «Romancero gitano» de Lorca."},
+ "Romancillo":{def:"Romance en versos de arte menor (hexasílabos o heptasílabos), con asonancia en los pares.",origen:"Variante breve del romance tradicional.",repr:"Lírica popular y culta del Siglo de Oro; Lope de Vega."},
+ "Romance heroico":{def:"Romance en versos endecasílabos, con asonancia en los pares.",origen:"Variante culta del romance, propia del Siglo de Oro y del Neoclasicismo.",repr:"Poetas áureos y neoclásicos."},
+ "Silva":{def:"Serie de versos heptasílabos y endecasílabos combinados con libertad, con rima consonante a voluntad del poeta (puede dejar versos sueltos).",origen:"Forma italianizante del Renacimiento y el Barroco.",repr:"Góngora («Soledades»), Quevedo, fray Luis; en época contemporánea, la silva libre."}
+};
+
+/* fichas de los tipos de verso por número de sílabas */
+const VERSO_FICHA={
+ 2:{def:"Verso de dos sílabas (bisílabo), de arte menor; raro y casi siempre dentro de composiciones de pie quebrado."},
+ 3:{def:"Verso de tres sílabas (trisílabo), de arte menor, propio de la poesía ligera y los estribillos."},
+ 4:{def:"Verso de cuatro sílabas (tetrasílabo), de arte menor; frecuente como pie quebrado."},
+ 5:{def:"Verso de cinco sílabas (pentasílabo), de arte menor; aparece en seguidillas, villancicos y, combinado, en odas."},
+ 6:{def:"Verso de seis sílabas (hexasílabo), de arte menor; propio de romancillos, villancicos y poesía popular."},
+ 7:{def:"Verso de siete sílabas (heptasílabo), de arte menor; acompaña al endecasílabo en la lira y la silva y forma la seguidilla.",origen:"De uso culto desde el Renacimiento, combinado con el endecasílabo.",repr:"Garcilaso, fray Luis y la poesía anacreóntica del siglo XVIII."},
+ 8:{def:"Verso de ocho sílabas (octosílabo), de arte menor; el más característico de la poesía tradicional española.",origen:"Verso nacional castellano, documentado desde la Edad Media.",repr:"Romancero; coplas, redondillas y teatro del Siglo de Oro; Lorca y Antonio Machado."},
+ 9:{def:"Verso de nueve sílabas (eneasílabo), de arte mayor; poco frecuente, cultivado sobre todo en época moderna."},
+ 10:{def:"Verso de diez sílabas (decasílabo), de arte mayor; usado en himnos y en la poesía culta y modernista."},
+ 11:{def:"Verso de once sílabas (endecasílabo), de arte mayor; el verso culto por excelencia de la poesía española.",origen:"De origen italiano; aclimatado con éxito en el siglo XVI por Boscán y Garcilaso.",repr:"Base del soneto, la lira, el cuarteto y la octava: Garcilaso, Góngora, Quevedo."},
+ 12:{def:"Verso de doce sílabas (dodecasílabo), de arte mayor; propio de la poesía de cancionero medieval y del Modernismo."},
+ 13:{def:"Verso de trece sílabas (tridecasílabo), de arte mayor; muy raro, de uso casi exclusivamente modernista."},
+ 14:{def:"Verso de catorce sílabas (alejandrino), de arte mayor, dividido en dos hemistiquios de siete.",origen:"Propio del mester de clerecía medieval (cuaderna vía, siglos XIII-XIV); recuperado por el Modernismo.",repr:"Gonzalo de Berceo y el «Libro de buen amor»; más tarde Rubén Darío y Antonio Machado."}
+};
+function fichaVerso(n){return VERSO_FICHA[n]||{def:"Verso de "+n+" sílabas."};}
+
+function detectarEstrofa(versos){
+  const n=versos.length;
+  if(n<2)return null;
+  const counts=versos.map(v=>v.conteoFinal);
+  const md=moda(counts);
+  const pred=md.valor;
+  const cons=esquemaLetras(versos,"consonante");
+  const ason=esquemaLetras(versos,"asonante");
+  const todos=(x,tol=0)=>counts.every(c=>aprox(c,x,tol));
+  const ev=`${n} versos · predominio ${nombreVerso(pred).nombre} (${pred}) · esquema ${cons}`;
+  const out=(forma,descripcion,confianza="alta",fichaKey)=>({forma,descripcion,evidencia:ev,esquemaCons:cons,esquemaAson:ason,confianza,ficha:FORMAS[fichaKey||forma]||null});
+
+  // pares de vocales para romance: versos pares comparten rima asonante
+  const pares=versos.filter((_,i)=>i%2===1); // posiciones 2,4,6...
+  const paresAson=pares.map(v=>v.rima.asonante||"·");
+  const romanceLike=pares.length>=2 && moda(paresAson).n>=Math.ceil(pares.length*0.7) && moda(paresAson).valor!=="·";
+
+  // ---- por número de versos ----
+  if(n===2){
+    if(cons==="AA")return out("Pareado",`Dos versos que riman entre sí (${nombreVerso(pred).nombre}s).`);
+  }
+  if(n===3){
+    if(todos(11,1))return out("Terceto","Tres endecasílabos. Suele aparecer encadenado en cadenas de tercetos (ABA BCB…).");
+    if(todos(8,1)&&(ason[0]===ason[2])&&ason[1]!==ason[0])return out("Soleá","Tres octosílabos con rima asonante en 1.º y 3.º; el 2.º queda suelto.");
+  }
+  if(n===4){
+    if(todos(11,1)){
+      if(cons==="ABBA")return out("Cuarteto","Cuatro endecasílabos con rima ABBA.");
+      if(cons==="ABAB")return out("Serventesio","Cuatro endecasílabos con rima ABAB.");
+      return out("Cuarteta de arte mayor","Cuatro versos de arte mayor.","media");
+    }
+    if(todos(8,1)){
+      if(cons==="ABBA")return out("Redondilla","Cuatro octosílabos con rima abba.");
+      if(cons==="ABAB")return out("Cuarteta","Cuatro octosílabos con rima abab.");
+      if(ason[1]===ason[3]&&ason[0]!==ason[1])return out("Copla","Cuatro octosílabos con rima asonante en los pares (-a-a); prolongada con esa misma asonancia, formaría un romance.","media");
+    }
+    // seguidilla 7-5-7-5
+    if(aprox(counts[0],7,1)&&aprox(counts[1],5,1)&&aprox(counts[2],7,1)&&aprox(counts[3],5,1))
+      return out("Seguidilla","Versos de 7 y 5 sílabas (7-5-7-5) con rima asonante en los pares.","media");
+  }
+  if(n===5){
+    // lira: 7-11-7-7-11, rima ABABB
+    if(aprox(counts[0],7,1)&&aprox(counts[1],11,1)&&aprox(counts[2],7,1)&&aprox(counts[3],7,1)&&aprox(counts[4],11,1)&&cons==="ABABB")
+      return out("Lira","Cinco versos (7-11-7-7-11) con rima aBabB. Estrofa de Garcilaso, fray Luis y san Juan de la Cruz.");
+    if(aprox(counts[0],7,1)&&aprox(counts[1],11,1)&&aprox(counts[2],7,1)&&aprox(counts[3],7,1)&&aprox(counts[4],11,1))
+      return out("Lira (rima irregular)","Cinco versos en el molde 7-11-7-7-11 de la lira; la rima detectada no es la canónica aBabB.","media","Lira");
+    if(todos(8,1))return out("Quintilla","Cinco octosílabos con dos rimas consonantes entrelazadas.","media");
+    if(todos(11,1))return out("Quinteto","Cinco endecasílabos.","media");
+  }
+  if(n===8){
+    if(todos(11,1)&&cons==="ABABABCC")return out("Octava real","Ocho endecasílabos con rima ABABABCC.");
+    if(todos(11,1))return out("Octava de arte mayor","Ocho versos endecasílabos.","media");
+    if(todos(8,1))return out("Octavilla","Ocho octosílabos.","media");
+  }
+  if(n===10){
+    if(todos(8,1)&&cons==="ABBAACCDDC")return out("Décima (espinela)","Diez octosílabos con rima abbaaccddc.","alta","Décima");
+    if(todos(8,1))return out("Décima","Diez octosílabos.","media");
+  }
+  if(n===14){
+    const q=cons.slice(0,8);
+    const cuartetosOk=(q==="ABBAABBA"||q==="ABABABAB"||q==="ABBACDDC"||q==="ABABCDCD");
+    if(todos(11,1)&&cuartetosOk)
+      return out("Soneto",`Catorce endecasílabos: dos cuartetos (${cons.slice(0,4)} ${cons.slice(4,8)}) y dos tercetos (${cons.slice(8,11)} ${cons.slice(11)}).`);
+    if(todos(11,1))
+      return out("Soneto (rima irregular)","Catorce endecasílabos con la disposición de un soneto, aunque la rima detectada no encaja con los moldes clásicos.","media","Soneto");
+    if(romanceLike)return out("Romance","Serie de versos con rima asonante en los pares y los impares sueltos.","media");
+  }
+
+  // ---- formas de extensión libre ----
+  if(romanceLike){
+    if(aprox(pred,8,0))return out("Romance","Serie indefinida de octosílabos: riman en asonante los versos pares; los impares quedan sueltos.");
+    if(pred<=7)return out("Romancillo","Romance de versos de arte menor (heptasílabos o menos): asonancia en los pares.");
+    if(aprox(pred,11,0))return out("Romance heroico","Romance de endecasílabos: asonancia en los pares.");
+    return out("Romance (variante)","Asonancia en los versos pares; los impares quedan sueltos.","media","Romance");
+  }
+  // silva: mezcla de 7 y 11
+  const solo711=counts.every(c=>aprox(c,7,1)||aprox(c,11,1));
+  const hay7=counts.some(c=>aprox(c,7,1)),hay11=counts.some(c=>aprox(c,11,1));
+  if(n>=4&&solo711&&hay7&&hay11)
+    return out("Silva","Combinación libre de heptasílabos y endecasílabos con rima consonante a voluntad del poeta (algunos versos pueden quedar sueltos).","media");
+
+  // genérico
+  if(md.n>=Math.ceil(n*0.6)){
+    const {nombre,arte}=nombreVerso(pred);
+    return out(`Serie de ${nombre}s`,`Conjunto de ${n} versos, en su mayoría ${nombre}s (${arte}). No coincide con un molde estrófico fijo reconocido.`,"baja");
+  }
+  return out("Composición de metro variado",`Conjunto de ${n} versos de medidas variadas; no coincide con un molde estrófico fijo reconocido.`,"baja");
+}
+
+/* ============================================================
+   INTERFAZ
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const entrada=$("#entrada"),results=$("#results"),schemeHost=$("#scheme-host"),countNote=$("#count-note");
+const controls=$("#controls");
+const opt={ritmo:$("#opt-ritmo"),gram:$("#opt-gram"),sin:$("#opt-sin"),rima:$("#opt-rima"),explica:$("#opt-explica"),lic:$("#opt-lic"),simple:$("#opt-simple")};
+const esc=s=>s.replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+
+/* ---------- componentes de salida ---------- */
+// silabeo poético (sílabas reales tras sinalefa), tónica marcada, sinalefa subrayada
+function silabeoPoeticoHTML(a){
+  return a.metricas.map(m=>{
+    let t=esc(m.texto);
+    if(m.tonica)t=`<b class="t">${t}</b>`;
+    if(m.sinalefa)t=`<span class="syn">${t}</span>`;
+    return t;
+  }).join("-");
+}
+
+// desglose paso a paso del cómputo
+function computoHTML(a){
+  const merges=a.gramTotal-a.nReales;
+  const limpio=a.motivo.replace(/\s*\([^)]*\)/,""); // "aguda final (+1)" -> "aguda final"
+  const li=[];
+  li.push(`<li><span class="cn">${a.gramTotal}</span> sílabas gramaticales (sumando palabra a palabra)</li>`);
+  if(merges>0){
+    const ej=a.sinalefas.length?` <span class="cnote">une ${a.sinalefas.map(s=>"<code>"+esc(s)+"</code>").join(", ")}</span>`:"";
+    li.push(`<li class="minus"><span class="cn">−${merges}</span> por sinalefa${ej}</li>`);
+  }
+  li.push(`<li class="rule"><span class="cn">${a.nReales}</span> sílabas <b>pronunciadas</b> en el verso</li>`);
+  if(a.ajuste>0) li.push(`<li class="plus"><span class="cn">+${a.ajuste}</span> ley del acento final · ${limpio}</li>`);
+  else if(a.ajuste<0) li.push(`<li class="minus"><span class="cn">${a.ajuste}</span> ley del acento final · ${limpio}</li>`);
+  else li.push(`<li><span class="cn">±0</span> ley del acento final · ${limpio}</li>`);
+  li.push(`<li class="total"><span class="cn">${a.conteoFinal}</span> sílabas métricas → <b>${a.nombre}</b> (${a.arte})</li>`);
+  return `<div class="compute"><span class="k">cómo se cuenta este verso</span><ol class="compute-list">${li.join("")}</ol></div>`;
+}
+
+// licencias candidatas (no se aplican: solo se señalan)
+function licenciasHTML(a){
+  const L=a.licencias,items=[];
+  L.sineresis.forEach(x=>items.push(`<li><span class="lic-tag sineresis">sinéresis</span><span class="lic-body">en <span class="word">${esc(x.palabra)}</span>, el hiato <b>${esc(x.vocales)}</b> (<code>${x.silabas.map(esc).join("-")}</code>) <span class="muted">podría</span> leerse en una sola sílaba.</span></li>`));
+  L.dieresis.forEach(x=>items.push(`<li><span class="lic-tag dieresis">diéresis</span><span class="lic-body">en <span class="word">${esc(x.palabra)}</span>, el diptongo <b>${esc(x.vocales)}</b> (sílaba <code>${esc(x.silaba)}</code>) <span class="muted">podría</span> separarse en dos.</span></li>`));
+  (L.dialefa||[]).forEach(t=>items.push(`<li><span class="lic-tag dialefa">dialefa</span><span class="lic-body">la sinalefa <code>${esc(t)}</code> <span class="muted">podría</span> deshacerse y contar como dos sílabas.</span></li>`));
+  if(!items.length) return `<div class="licencias empty-lic"><span class="k">licencias posibles</span><p class="lic-none">No se detectan diptongos, hiatos ni enlaces susceptibles de licencia en este verso.</p></div>`;
+  return `<div class="licencias"><span class="k">licencias posibles · no aplicadas</span><ul class="lic-list">${items.join("")}</ul><p class="lic-caveat">Solo se señalan candidatos. El recuento de arriba <b>no</b> los aplica; queda a criterio de la lectura.</p></div>`;
+}
+
+// identificación de forma estrófica
+// fichas de los tipos de verso presentes (definición · origen · representantes)
+function tiposVersoHTML(versos){
+  const seen=new Map();
+  versos.forEach(v=>{ if(!seen.has(v.conteoFinal)) seen.set(v.conteoFinal,v); });
+  const cards=[...seen.values()].sort((a,b)=>a.conteoFinal-b.conteoFinal).map(v=>{
+    const f=fichaVerso(v.conteoFinal);
+    const extra=[];
+    if(f.origen) extra.push(`<div><dt>origen</dt><dd>${esc(f.origen)}</dd></div>`);
+    if(f.repr) extra.push(`<div><dt>representantes</dt><dd>${esc(f.repr)}</dd></div>`);
+    return `<article class="vtipo">
+      <header><span class="vt-num">${v.conteoFinal}</span><h3>${esc(v.nombre)}</h3><span class="vt-arte">${esc(v.arte)}</span></header>
+      <p class="vt-def">${esc(f.def)}</p>
+      ${extra.length?`<dl class="ficha mini">${extra.join("")}</dl>`:""}
+    </article>`;
+  }).join("");
+  return `<section class="tipos"><span class="k">${seen.size>1?"los versos":"el verso"}</span><div class="tipos-grid">${cards}</div></section>`;
+}
+
+function estrofaHTML(versos){
+  const e=detectarEstrofa(versos);
+  if(!e) return "";
+  let ficha="";
+  if(e.ficha){
+    ficha=`<dl class="ficha">
+      <div><dt>definición</dt><dd>${esc(e.ficha.def)}</dd></div>
+      <div><dt>origen y época</dt><dd>${esc(e.ficha.origen)}</dd></div>
+      <div><dt>representantes</dt><dd>${esc(e.ficha.repr)}</dd></div>
+    </dl>`;
+  }
+  return `<section class="strophe conf-${e.confianza}">
+    <span class="k">forma compatible</span>
+    <h2 class="forma">${esc(e.forma)}<span class="conf">confianza ${e.confianza}</span></h2>
+    <p class="desc">${esc(e.descripcion)}</p>
+    ${ficha}
+    <p class="evid"><span class="el">indicios</span>${esc(e.evidencia)}</p>
+    <p class="evid"><span class="el">rima</span>consonante <code>${esc(e.esquemaCons)}</code> · asonante <code>${esc(e.esquemaAson)}</code></p>
+    <p class="strophe-caveat">Cotejo automático sobre el cómputo (sílabas + rima). Si el poema emplea licencias, la medida y la forma pueden variar.</p>
+  </section>`;
+}
+
+// esquema métrico (compartido por ambos modos)
+function schemeHTML(versos){
+  const mapa={};let next=0;const letras="abcdefghijklmnopqrstuvwxyz";
+  const rows=versos.map(v=>{
+    const key=v.rima.asonante||"·";
+    if(!(key in mapa))mapa[key]=next++;
+    let Lt=letras[mapa[key]%26];
+    if(v.arte==="arte mayor")Lt=Lt.toUpperCase();
+    return{tok:v.conteoFinal,letra:Lt,texto:v.texto};
+  });
+  return `<section class="scheme">
+    <h2>Esquema métrico</h2>
+    <p>Número de sílabas + letra de rima (asonante). Mayúscula = arte mayor, minúscula = arte menor.</p>
+    <div class="scheme-rows">
+      ${rows.map(r=>`<div class="scheme-row"><span class="tok">${r.tok}<span class="arte">${r.letra}</span></span><span class="ln">${esc(r.texto)}</span></div>`).join("")}
+    </div>
+  </section>`;
+}
+
+function render(){
+  const lineas=entrada.value.split("\n").map(l=>l.trim());
+  const usarSin=opt.sin.checked;
+  const analisis=lineas.map(l=>l?analizarVerso(l,usarSin):null);
+  const versos=analisis.filter(a=>a);
+
+  const simple=opt.simple.checked;
+  controls.classList.toggle("simple-mode",simple);
+  document.body.classList.toggle("is-simple",simple);
+
+  results.innerHTML="";
+  schemeHost.innerHTML="";
+
+  if(versos.length===0){
+    results.innerHTML='<div class="empty">Escribe arriba para ver el análisis.</div>';
+    countNote.textContent="";
+    return;
+  }
+
+  const totalSil=versos.reduce((s,v)=>s+v.conteoFinal,0);
+  countNote.innerHTML=versos.length+" verso"+(versos.length>1?"s":"")+" · "+totalSil+" sílabas";
+
+  /* ---------------- MODO DISEÑO SIMPLE ---------------- */
+  if(simple){
+    let vn=0;
+    const rows=analisis.map(a=>{
+      if(!a)return '<div class="s-row s-blank"></div>';
+      vn++;
+      return `<div class="s-row">
+        <span class="s-num">${String(vn).padStart(2,"0")}</span>
+        <span class="s-syl">${silabeoPoeticoHTML(a)}</span>
+        <span class="s-meta"><b>${a.conteoFinal}</b> ${a.nombre}</span>
+      </div>`;
+    }).join("");
+    const doc=document.createElement("section");
+    doc.className="simple-doc";
+    doc.innerHTML=`<p class="simple-hint">Silabeo poético con sinalefa aplicada; en <b class="t">rojo</b>, las sílabas tónicas.</p>${rows}`;
+    results.appendChild(doc);
+    schemeHost.innerHTML=tiposVersoHTML(versos)+(versos.length>=2?estrofaHTML(versos)+schemeHTML(versos):"");
+    return;
+  }
+
+  /* ---------------- MODO DETALLADO ---------------- */
+  let vn=0;
+  for(const a of analisis){
+    if(!a)continue;
+    vn++;
+    const card=document.createElement("article");
+    card.className="verse";
+
+    const cols=a.metricas.map((m,i)=>{
+      const cls=["syl"];if(m.tonica)cls.push("tonica");if(m.sinalefa)cls.push("sinalefa");
+      const mark=opt.ritmo.checked?`<span class="mark">${m.tonica?"–":"∪"}</span>`:"";
+      const tie=m.sinalefa?'<span class="tie"></span>':"";
+      return `<span class="${cls.join(" ")}"><span class="txt">${esc(m.texto)}</span>${mark}<span class="pos">${i+1}</span>${tie}</span>`;
+    }).join("");
+    let phantom="";
+    if(a.ajuste>0){
+      phantom=`<span class="syl phantom"><span class="txt">+${a.ajuste}</span>${opt.ritmo.checked?'<span class="mark">·</span>':""}<span class="pos">${a.nReales+1}</span></span>`;
+    }
+
+    const rhythm=opt.ritmo.checked?`<div class="rhythm-strip">${a.metricas.map(m=>m.tonica?`<span class="t">–</span>`:"∪").join(" ")}</div>`:"";
+
+    const facts=[];
+    if(a.acentos.length)
+      facts.push(`<span class="fact"><span class="k">acentos</span><b>${a.acentos.join(", ")}</b> · ${a.ritmoTipo}</span>`);
+    facts.push(`<span class="fact"><span class="k">cómputo</span>${a.nReales} reales <b>${a.ajuste>=0?"+"+a.ajuste:a.ajuste}</b> = <b>${a.conteoFinal}</b> · <span style="opacity:.85">${a.motivo}</span></span>`);
+    if(opt.rima.checked&&a.rima.asonante)
+      facts.push(`<span class="fact"><span class="k">rima</span>consonante <code>-${esc(a.rima.consonante)}</code> · asonante <code>${esc(a.rima.asonante.split("").join("-"))}</code></span>`);
+
+    let gram="";
+    if(opt.gram.checked){
+      const words=a.gramatical.map(g=>`<span class="word">${g.silabas.map(esc).join("-")}</span>`).join('<span class="sep">·</span>');
+      gram=`<div class="gram-line"><span class="k">silabeo gramatical</span>${words}</div>`;
+    }
+
+    const compute=opt.explica.checked?computoHTML(a):"";
+    const lic=opt.lic.checked?licenciasHTML(a):"";
+
+    card.innerHTML=`
+      <div class="verse-head">
+        <span class="v-num">${String(vn).padStart(2,"0")}</span>
+        <span class="v-text">${esc(a.texto)}</span>
+        <span class="v-badge">
+          <span class="num">${a.conteoFinal}</span>
+          <span class="meta"><b>${a.nombre}</b>${a.arte}</span>
+        </span>
+      </div>
+      <div class="verse-body">
+        <div class="scan">${cols}${phantom}</div>
+        ${rhythm}
+        <div class="facts">${facts.join("")}</div>
+        ${gram}
+        ${compute}
+        ${lic}
+      </div>`;
+    results.appendChild(card);
+  }
+
+  schemeHost.innerHTML=tiposVersoHTML(versos)+(versos.length>=2?estrofaHTML(versos)+schemeHTML(versos):"");
+}
+
+let t=null;
+function schedule(){clearTimeout(t);t=setTimeout(render,120);}
+entrada.addEventListener("input",schedule);
+Object.values(opt).forEach(o=>o.addEventListener("change",render));
+render();
+
+/* ---------- descargar la versión offline (un único .html autónomo) ---------- */
+(function(){
+  const btn=document.getElementById("download-btn");
+  if(!btn) return;
+  const ETIQUETA='<span class="dl-ico" aria-hidden="true">↓</span> Descargar para usar sin conexión';
+  btn.addEventListener("click",function(){
+    const clon=document.documentElement.cloneNode(true);
+    // guardar la app "limpia": vaciar lo generado dinámicamente
+    ["#results","#scheme-host"].forEach(sel=>{const el=clon.querySelector(sel); if(el) el.innerHTML="";});
+    const cn=clon.querySelector("#count-note"); if(cn) cn.textContent="";
+    const ctrl=clon.querySelector("#controls"); if(ctrl) ctrl.classList.remove("simple-mode");
+    const btnClon=clon.querySelector("#download-btn"); // botón en estado neutro en el archivo guardado
+    if(btnClon){btnClon.classList.remove("done"); btnClon.innerHTML=ETIQUETA;}
+    const doc="<!DOCTYPE html>\n"+clon.outerHTML;
+    const blob=new Blob([doc],{type:"text/html;charset=utf-8"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download="escandir.html";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    btn.classList.add("done");
+    btn.innerHTML='<span class="dl-ico" aria-hidden="true">✓</span> Descargado';
+    setTimeout(()=>{btn.classList.remove("done"); btn.innerHTML=ETIQUETA;},2200);
+  });
+})();
+</script>
+</body>
+</html>
